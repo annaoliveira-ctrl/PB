@@ -1,0 +1,6 @@
+{
+  "name": "PB Bot Expert",
+  "description": "Ferramenta inteligente para estruturar anotações de passagem de bastão de clientes do fluxo de Ativação para Adoção.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
