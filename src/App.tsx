@@ -93,7 +93,7 @@ export default function App() {
     setResult(null);
 
     try {
-      // Captura a chave de API injetada pelo Vite durante o build
+      // Captura a chave de API injetada pelo Vite ou ambiente durante o build
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (process.env as any).GEMINI_API_KEY || "";
       if (!apiKey) {
         throw new Error("Chave de API do Gemini não configurada.");
@@ -131,13 +131,14 @@ export default function App() {
       };
 
       const systemInstruction = `Você é o "PB Bot Expert", um especialista em CS (Customer Success) e Onboarding de Clientes. 
-Sua tarefa é ler anotações brutas, informais e desestruturadas sobre a passagem de bastão (PB) de um cliente (do fluxo de Ativação para Adoção) e reescrevê-las de forma altamente profissional, gramaticalmente perfeita e rica em detalhes operacionais para inclusão no CRM/Pipedrive.`;
+Sua tarefa é ler anotações brutas, informais e desestruturadas sobre a passagem de bastão (PB) de um cliente (do fluxo de Ativação para Adoção) e reescrevê-las de forma highly profissional, gramaticalmente perfeita e rica em detalhes operacionais para inclusão no CRM/Pipedrive.`;
 
       const prompt = `Analise as seguintes anotações de passagem de bastão e estruture-as na resposta JSON conforme o esquema:
 
 Texto Bruto:
 ${rawText}`;
 
+      // Modelo atualizado para gemini-2.5-flash
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
@@ -261,6 +262,14 @@ ${rawText}`;
     setResult(updatedRevised);
     setIsEditing(null);
   };
+
+  const sectionsConfig: { key: keyof Omit<RevisedHandover, "notasPendentes">; title: string }[] = [
+    { key: "humorCliente", title: "1. Humor do Cliente" },
+    { key: "processoAtivacao", title: "2. Processo de Ativação" },
+    { key: "prestacaoContas", title: "3. Prestação de Contas" },
+    { key: "nivelAutonomia", title: "4. Nível de Autonomia e Conhecimento" },
+    { key: "detalhesAdicionais", title: "5. Detalhes Adicionais" }
+  ];
 
   return (
     <div id="pb-bot-expert-root" className="min-h-screen mesh-gradient text-slate-100 font-sans antialiased flex flex-col">
@@ -610,243 +619,60 @@ ${rawText}`;
 
                 {/* Mandatory Sections */}
                 <div id="mandatory-sections" className="space-y-4">
-                  
-                  {/* Section 1 */}
-                  <div className="border border-white/10 rounded-2xl bg-white/5 overflow-hidden hover:border-white/20 transition-all">
-                    <div className="bg-white/5 px-4 py-2.5 border-b border-white/15 flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-bold text-xs text-indigo-300">
-                        <span>1. Humor do Cliente</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => copyToClipboard("humor", editedFields.humorCliente)}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Copiar esta seção"
-                        >
-                          {copiedSection === "humor" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => setIsEditing(isEditing === "humorCliente" ? null : "humorCliente")}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Editar seção"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-4 text-xs text-slate-300 leading-relaxed font-sans">
-                      {isEditing === "humorCliente" ? (
-                        <div className="space-y-2">
-                          <textarea
-                            rows={4}
-                            className="w-full p-2.5 glass-input rounded-lg focus:outline-none text-xs text-slate-200"
-                            value={editedFields.humorCliente}
-                            onChange={(e) => setEditedFields({ ...editedFields, humorCliente: e.target.value })}
-                          />
+                  {sectionsConfig.map((sec) => (
+                    <div key={sec.key} className="border border-white/10 rounded-2xl bg-white/5 overflow-hidden hover:border-white/20 transition-all">
+                      <div className="bg-white/5 px-4 py-2.5 border-b border-white/15 flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-bold text-xs text-indigo-300">
+                          <span>{sec.title}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => handleSaveFieldEdit("humorCliente")}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer"
+                            onClick={() => copyToClipboard(sec.key, editedFields[sec.key])}
+                            className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                            title="Copiar esta seção"
                           >
-                            <Save className="w-3 h-3" /> Salvar Campo
+                            {copiedSection === sec.key ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            onClick={() => setIsEditing(isEditing === sec.key ? null : sec.key)}
+                            className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                            title="Editar seção"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      ) : (
-                        <div className="space-y-1.5 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(editedFields.humorCliente) }}></div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Section 2 */}
-                  <div className="border border-white/10 rounded-2xl bg-white/5 overflow-hidden hover:border-white/20 transition-all">
-                    <div className="bg-white/5 px-4 py-2.5 border-b border-white/15 flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-bold text-xs text-indigo-300">
-                        <span>2. Processo de Ativação</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => copyToClipboard("ativacao", editedFields.processoAtivacao)}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Copiar esta seção"
-                        >
-                          {copiedSection === "ativacao" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => setIsEditing(isEditing === "processoAtivacao" ? null : "processoAtivacao")}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Editar seção"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="p-4 text-xs text-slate-300 leading-relaxed font-sans">
+                        {isEditing === sec.key ? (
+                          <div className="space-y-2">
+                            <textarea
+                              rows={4}
+                              className="w-full p-2.5 glass-input rounded-lg focus:outline-none text-xs text-slate-200"
+                              value={editedFields[sec.key]}
+                              onChange={(e) => setEditedFields({ ...editedFields, [sec.key]: e.target.value })}
+                            />
+                            <button
+                              onClick={() => handleSaveFieldEdit(sec.key)}
+                              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer"
+                            >
+                              <Save className="w-3 h-3" /> Salvar Campo
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className="space-y-1.5 whitespace-pre-line"
+                            dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(editedFields[sec.key]) }}
+                          ></div>
+                        )}
                       </div>
                     </div>
-                    <div className="p-4 text-xs text-slate-300 leading-relaxed font-sans">
-                      {isEditing === "processoAtivacao" ? (
-                        <div className="space-y-2">
-                          <textarea
-                            rows={4}
-                            className="w-full p-2.5 glass-input rounded-lg focus:outline-none text-xs text-slate-200"
-                            value={editedFields.processoAtivacao}
-                            onChange={(e) => setEditedFields({ ...editedFields, processoAtivacao: e.target.value })}
-                          />
-                          <button
-                            onClick={() => handleSaveFieldEdit("processoAtivacao")}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer"
-                          >
-                            <Save className="w-3 h-3" /> Salvar Campo
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(editedFields.processoAtivacao) }}></div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Section 3 */}
-                  <div className="border border-white/10 rounded-2xl bg-white/5 overflow-hidden hover:border-white/20 transition-all">
-                    <div className="bg-white/5 px-4 py-2.5 border-b border-white/15 flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-bold text-xs text-indigo-300">
-                        <span>3. Prestação de Contas</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => copyToClipboard("contas", editedFields.prestacaoContas)}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Copiar esta seção"
-                        >
-                          {copiedSection === "contas" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => setIsEditing(isEditing === "prestacaoContas" ? null : "prestacaoContas")}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Editar seção"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-4 text-xs text-slate-300 leading-relaxed font-sans">
-                      {isEditing === "prestacaoContas" ? (
-                        <div className="space-y-2">
-                          <textarea
-                            rows={4}
-                            className="w-full p-2.5 glass-input rounded-lg focus:outline-none text-xs text-slate-200"
-                            value={editedFields.prestacaoContas}
-                            onChange={(e) => setEditedFields({ ...editedFields, prestacaoContas: e.target.value })}
-                          />
-                          <button
-                            onClick={() => handleSaveFieldEdit("prestacaoContas")}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer"
-                          >
-                            <Save className="w-3 h-3" /> Salvar Campo
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(editedFields.prestacaoContas) }}></div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Section 4 */}
-                  <div className="border border-white/10 rounded-2xl bg-white/5 overflow-hidden hover:border-white/20 transition-all">
-                    <div className="bg-white/5 px-4 py-2.5 border-b border-white/15 flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-bold text-xs text-indigo-300">
-                        <span>4. Nível de Autonomia</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => copyToClipboard("autonomia", editedFields.nivelAutonomia)}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Copiar esta seção"
-                        >
-                          {copiedSection === "autonomia" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => setIsEditing(isEditing === "nivelAutonomia" ? null : "nivelAutonomia")}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Editar seção"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-4 text-xs text-slate-300 leading-relaxed font-sans">
-                      {isEditing === "nivelAutonomia" ? (
-                        <div className="space-y-2">
-                          <textarea
-                            rows={4}
-                            className="w-full p-2.5 glass-input rounded-lg focus:outline-none text-xs text-slate-200"
-                            value={editedFields.nivelAutonomia}
-                            onChange={(e) => setEditedFields({ ...editedFields, nivelAutonomia: e.target.value })}
-                          />
-                          <button
-                            onClick={() => handleSaveFieldEdit("nivelAutonomia")}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer"
-                          >
-                            <Save className="w-3 h-3" /> Salvar Campo
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(editedFields.nivelAutonomia) }}></div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Section 5 */}
-                  <div className="border border-white/10 rounded-2xl bg-white/5 overflow-hidden hover:border-white/20 transition-all">
-                    <div className="bg-white/5 px-4 py-2.5 border-b border-white/15 flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-bold text-xs text-indigo-300">
-                        <span>5. Detalhes Adicionais</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => copyToClipboard("detalhes", editedFields.detalhesAdicionais)}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Copiar esta seção"
-                        >
-                          {copiedSection === "detalhes" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => setIsEditing(isEditing === "detalhesAdicionais" ? null : "detalhesAdicionais")}
-                          className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                          title="Editar seção"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-4 text-xs text-slate-300 leading-relaxed font-sans">
-                      {isEditing === "detalhesAdicionais" ? (
-                        <div className="space-y-2">
-                          <textarea
-                            rows={4}
-                            className="w-full p-2.5 glass-input rounded-lg focus:outline-none text-xs text-slate-200"
-                            value={editedFields.detalhesAdicionais}
-                            onChange={(e) => setEditedFields({ ...editedFields, detalhesAdicionais: e.target.value })}
-                          />
-                          <button
-                            onClick={() => handleSaveFieldEdit("detalhesAdicionais")}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-[10px] flex items-center gap-1 cursor-pointer"
-                          >
-                            <Save className="w-3 h-3" /> Salvar Campo
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(editedFields.detalhesAdicionais) }}></div>
-                      )}
-                    </div>
-                  </div>
-
+                  ))}
                 </div>
               </div>
             )}
           </section>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="mt-auto border-t border-white/10 py-4 glass-panel text-center text-xs text-slate-400">
-        <p>PB Bot Expert • Automação Inteligente de Passagem de Bastão</p>
-      </footer>
     </div>
   );
 }
