@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: './', // Garante que todos os assets (JS/CSS) sejam carregados com caminhos relativos
+    base: '/PB/', // Define o caminho base correto para o repositório no GitHub Pages
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
