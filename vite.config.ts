@@ -5,8 +5,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    // Trocamos de '/PB/' para './' para garantir que os caminhos sejam relativos ao arquivo que os chama
-    base: './', 
+    // Definimos a base para o nome exato do repositório (com as barras)
+    base: '/PB/', 
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
