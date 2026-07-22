@@ -29,12 +29,12 @@ jobs:
           node-version: 20
 
       - name: Instalar dependencias e Criar o site
-     env:
-       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-       VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-     run: |
-       npm install
-       npm run build
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          npm install
+          npm run build
 
       - name: Configurar Pages
         uses: actions/configure-pages@v4
