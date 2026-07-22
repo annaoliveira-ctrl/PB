@@ -5,8 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    // Definimos a base para o nome exato do repositório (com as barras)
-    base: '/PB/', 
+    base: './', // Garante que todos os assets (JS/CSS) sejam carregados com caminhos relativos
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -14,7 +13,6 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
